@@ -51,7 +51,7 @@ async function searchXBatch(query: string, bearerToken: string): Promise<XTweet[
 }
 
 function tweetEngagement(tweet: XTweet): number {
-  const m = tweet.public_metrics ?? {}
+  const m = tweet.public_metrics ?? { like_count: 0, reply_count: 0, retweet_count: 0, quote_count: 0 }
   return (
     (m.like_count ?? 0) +
     (m.reply_count ?? 0) * 1.5 +
