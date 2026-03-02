@@ -2,19 +2,19 @@
   "crons": [
     {
       "path": "/api/cron/sync-funding",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/sync-news",
-      "schedule": "0 */2 * * *"
+      "schedule": "0 7 * * *"
     },
     {
       "path": "/api/cron/sync-social",
-      "schedule": "30 * * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/cron/compute-buzz",
-      "schedule": "45 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
