@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-funding",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-news",
+      "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-social",
+      "schedule": "30 * * * *"
+    },
+    {
+      "path": "/api/cron/compute-buzz",
+      "schedule": "45 * * * *"
+    }
+  ]
+}
