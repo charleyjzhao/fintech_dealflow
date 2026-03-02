@@ -40,6 +40,48 @@ const RSS_FEEDS = [
     name: 'Crowdfund Insider',
     url: 'https://www.crowdfundinsider.com/feed/',
   },
+  // Substack newsletters
+  {
+    name: 'This Week in Fintech',
+    url: 'https://thisweekinfintech.substack.com/feed',
+  },
+  {
+    name: 'Fintech Takes',
+    url: 'https://newsletter.fintechtakes.com/feed',
+  },
+  {
+    name: 'Fintech Wrap Up',
+    url: 'https://www.fintechwrapup.com/feed',
+  },
+  // Additional fintech news sites
+  {
+    name: 'Crunchbase News',
+    url: 'https://news.crunchbase.com/feed/',
+  },
+  {
+    name: 'The Fintech Times',
+    url: 'https://thefintechtimes.com/feed/',
+  },
+  {
+    name: 'Finance Magnates',
+    url: 'https://www.financemagnates.com/fintech/feed/',
+  },
+  {
+    name: 'Sifted',
+    url: 'https://sifted.eu/sector/fintech/feed',
+  },
+  {
+    name: 'Finovate Blog',
+    url: 'https://feeds.feedblitz.com/finovate',
+  },
+  {
+    name: 'TechBullion',
+    url: 'https://techbullion.com/feed',
+  },
+  {
+    name: 'Fintech News Singapore',
+    url: 'https://fintechnews.sg/feed',
+  },
 ]
 
 interface RSSItem {
