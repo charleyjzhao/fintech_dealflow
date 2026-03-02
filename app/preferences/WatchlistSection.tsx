@@ -32,7 +32,7 @@ export function WatchlistSection({ watchlist }: { watchlist: WatchlistRow[] }) {
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No companies in your watchlist yet. Browse the{' '}
-            <Link href="/trending" className="text-primary hover:underline">
+            <Link href="/" className="text-primary hover:underline">
               trending page
             </Link>{' '}
             to add some.

@@ -1,128 +1,112 @@
 import { Suspense } from 'react'
+import { TrendingUp, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { FeedFilters } from '@/components/feed/FeedFilters'
-import { RealtimeFeed } from '@/components/feed/RealtimeFeed'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { TrendingCard } from '@/components/trending/TrendingCard'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { FundingRoundWithCompany } from '@/types/database'
+import type { CompanyWithBuzz } from '@/types/database'
 
-interface PageProps {
-  searchParams: Promise<{
-    subsectors?: string   // comma-separated
-    stages?: string       // comma-separated
-    geographies?: string  // comma-separated
-    minAmount?: string
-  }>
-}
+// ISR: revalidate every hour
+export const revalidate = 3600
 
-function parseList(val?: string): string[] {
-  return val ? val.split(',').filter(Boolean) : []
-}
-
-async function DealFeedContent({
-  searchParams,
-}: {
-  searchParams: Awaited<PageProps['searchParams']>
-}) {
+async function getTrendingCompanies() {
   const supabase = await createClient()
 
-  const selectedStages = parseList(searchParams.stages)
-  const selectedGeos   = parseList(searchParams.geographies)
-  const selectedSectors = parseList(searchParams.subsectors)
-
-  let query = supabase
-    .from('funding_rounds')
+  const { data } = await supabase
+    .from('companies')
     .select(`
       *,
-      companies!inner (
-        *,
-        buzz_scores (*)
-      )
+      buzz_scores (*)
     `)
-    .order('announced_date', { ascending: false })
-    .limit(100)
+    .not('buzz_scores', 'is', null)
+    .order('buzz_scores(score_7d)', { ascending: false })
+    .limit(50)
 
-  // Stage filter — on funding_rounds.round_type directly
-  if (selectedStages.length === 1) {
-    query = query.eq('round_type', selectedStages[0])
-  } else if (selectedStages.length > 1) {
-    query = query.in('round_type', selectedStages)
-  }
-
-  // Amount filter
-  if (searchParams.minAmount) {
-    query = query.gte('amount_usd', parseInt(searchParams.minAmount))
-  }
-
-  // Geography filter — on embedded companies table
-  if (selectedGeos.length === 1) {
-    query = query.eq('companies.hq_country', selectedGeos[0])
-  } else if (selectedGeos.length > 1) {
-    query = query.in('companies.hq_country', selectedGeos)
-  }
-
-  const { data: rounds } = await query
-
-  // Subsector filter — applied in JS after fetch (array overlap on joined table)
-  const filtered =
-    selectedSectors.length === 0
-      ? (rounds as unknown as FundingRoundWithCompany[]) ?? []
-      : ((rounds as unknown as FundingRoundWithCompany[]) ?? []).filter((r) =>
-          r.companies.subsectors.some((s) => selectedSectors.includes(s))
-        )
-
-  return <RealtimeFeed initialRounds={filtered} />
+  return (data as CompanyWithBuzz[]) ?? []
 }
 
-function FeedSkeleton() {
+function TrendingList({
+  companies,
+  scoreType,
+}: {
+  companies: CompanyWithBuzz[]
+  scoreType: '7d' | '24h'
+}) {
+  const sorted = [...companies].sort((a, b) => {
+    const scoreA = scoreType === '24h' ? (a.buzz_scores?.score_24h ?? 0) : (a.buzz_scores?.score_7d ?? 0)
+    const scoreB = scoreType === '24h' ? (b.buzz_scores?.score_24h ?? 0) : (b.buzz_scores?.score_7d ?? 0)
+    return scoreB - scoreA
+  })
+
+  const maxScore = sorted[0]
+    ? (scoreType === '24h'
+        ? (sorted[0].buzz_scores?.score_24h ?? 0)
+        : (sorted[0].buzz_scores?.score_7d ?? 0))
+    : 1
+
+  if (sorted.length === 0) {
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-30" />
+        <p className="font-medium">No buzz data yet</p>
+        <p className="text-sm mt-1">Social signals are collected hourly</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-3">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="rounded-lg border p-5">
-          <div className="flex gap-4">
-            <Skeleton className="h-12 w-12 rounded-lg" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-4 w-32" />
-              <div className="flex gap-2 mt-3">
-                <Skeleton className="h-6 w-20 rounded-full" />
-                <Skeleton className="h-6 w-16 rounded-full" />
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-2">
+      {sorted.map((company, i) => (
+        <TrendingCard
+          key={company.id}
+          company={company}
+          rank={i + 1}
+          scoreType={scoreType}
+          maxScore={maxScore}
+        />
       ))}
     </div>
   )
 }
 
-export default async function DealFeedPage({ searchParams }: PageProps) {
-  const resolvedParams = await searchParams
-
-  const currentFilters = {
-    subsectors:   resolvedParams.subsectors,
-    stages:       resolvedParams.stages,
-    geographies:  resolvedParams.geographies,
-    minAmount:    resolvedParams.minAmount,
-  }
+export default async function TrendingPage() {
+  const companies = await getTrendingCompanies()
 
   return (
     <div className="container py-8 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-1">Deal Feed</h1>
+        <div className="flex items-center gap-2 mb-1">
+          <TrendingUp className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Trending Fintechs</h1>
+        </div>
         <p className="text-muted-foreground text-sm">
-          Latest fintech funding rounds — live updates as new deals are announced
+          Companies generating the most buzz across X, Reddit, Bluesky, and news — with or without a funding round.
         </p>
       </div>
 
-      <div className="mb-5">
-        <Suspense>
-          <FeedFilters currentFilters={currentFilters} />
-        </Suspense>
-      </div>
+      <Tabs defaultValue="7d">
+        <TabsList className="mb-5">
+          <TabsTrigger value="7d" className="flex items-center gap-1.5">
+            <TrendingUp className="h-4 w-4" />
+            7-Day Momentum
+          </TabsTrigger>
+          <TabsTrigger value="24h" className="flex items-center gap-1.5">
+            <Zap className="h-4 w-4" />
+            Last 24h Spike
+          </TabsTrigger>
+        </TabsList>
 
-      <Suspense fallback={<FeedSkeleton />}>
-        <DealFeedContent searchParams={resolvedParams} />
-      </Suspense>
+        <TabsContent value="7d">
+          <TrendingList companies={companies} scoreType="7d" />
+        </TabsContent>
+        <TabsContent value="24h">
+          <TrendingList companies={companies} scoreType="24h" />
+        </TabsContent>
+      </Tabs>
+
+      <p className="text-xs text-muted-foreground mt-6 text-center">
+        Buzz scores updated hourly · Last updated {new Date().toLocaleTimeString()}
+      </p>
     </div>
   )
 }

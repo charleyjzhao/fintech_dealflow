@@ -18,12 +18,6 @@ export async function Navbar() {
           <nav className="hidden md:flex items-center gap-4 text-sm">
             <Link
               href="/"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Deal Feed
-            </Link>
-            <Link
-              href="/trending"
               className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
             >
               <TrendingUp className="h-4 w-4" />
