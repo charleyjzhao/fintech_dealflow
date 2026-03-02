@@ -6,7 +6,7 @@ import { Navbar } from '@/components/Navbar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Fintech First — Funding & Buzz in One Place',
+  title: 'Fintech First - The buzz in one place',
   description:
     'Track fintech funding rounds and social buzz. See who raised money and who is generating excitement — bootstrapped companies, stealth fintechs, and hot new products.',
   openGraph: {
