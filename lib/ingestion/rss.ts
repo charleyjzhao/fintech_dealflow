@@ -5,6 +5,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/server'
+import { discoverAndCreateCompany } from '@/lib/ingestion/company-discovery'
 
 const RSS_FEEDS = [
   {
@@ -91,10 +92,11 @@ function stripCDATA(text: string): string {
   return text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim()
 }
 
-export async function syncRSSFeeds(): Promise<{ inserted: number; errors: string[] }> {
+export async function syncRSSFeeds(): Promise<{ inserted: number; discovered: number; errors: string[] }> {
   const supabase = createServiceClient()
   const errors: string[] = []
   let inserted = 0
+  let discovered = 0
 
   // Load companies for matching
   const { data: companies } = await supabase
@@ -102,7 +104,7 @@ export async function syncRSSFeeds(): Promise<{ inserted: number; errors: string
     .select('id, name')
     .order('name')
 
-  if (!companies?.length) return { inserted, errors }
+  if (!companies?.length) return { inserted, discovered, errors }
 
   for (const feed of RSS_FEEDS) {
     let xml: string
@@ -125,8 +127,15 @@ export async function syncRSSFeeds(): Promise<{ inserted: number; errors: string
 
     for (const item of items) {
       const text = `${item.title} ${item.description}`.toLowerCase()
-      const matched = companies.find((c) => text.includes(c.name.toLowerCase()))
-      if (!matched) continue
+      let matched = companies.find((c) => text.includes(c.name.toLowerCase()))
+
+      if (!matched) {
+        const newCompany = await discoverAndCreateCompany(item.title, supabase)
+        if (!newCompany) continue
+        companies.push(newCompany)
+        matched = newCompany
+        discovered++
+      }
 
       const { error } = await supabase
         .from('news_articles')
@@ -150,5 +159,5 @@ export async function syncRSSFeeds(): Promise<{ inserted: number; errors: string
     }
   }
 
-  return { inserted, errors }
+  return { inserted, discovered, errors }
 }

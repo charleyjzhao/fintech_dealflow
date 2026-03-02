@@ -7,6 +7,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/server'
+import { discoverAndCreateCompany } from '@/lib/ingestion/company-discovery'
 
 const NEWSAPI_BASE = 'https://newsapi.org/v2'
 
@@ -24,21 +25,22 @@ interface NewsAPIResponse {
   articles: NewsAPIArticle[]
 }
 
-export async function syncNewsFromNewsAPI(): Promise<{ inserted: number; errors: string[] }> {
+export async function syncNewsFromNewsAPI(): Promise<{ inserted: number; discovered: number; errors: string[] }> {
   const apiKey = process.env.NEWSAPI_KEY
   if (!apiKey) throw new Error('NEWSAPI_KEY not set')
 
   const supabase = createServiceClient()
   const errors: string[] = []
   let inserted = 0
+  let discovered = 0
 
   // Fetch companies for name matching
   const { data: companies } = await supabase
     .from('companies')
-    .select('id, name, slug')
+    .select('id, name')
     .order('name')
 
-  if (!companies?.length) return { inserted, errors }
+  if (!companies?.length) return { inserted, discovered, errors }
 
   // Search fintech news
   const queries = ['fintech funding', 'fintech startup', 'payments startup', 'neobank']
@@ -69,11 +71,17 @@ export async function syncNewsFromNewsAPI(): Promise<{ inserted: number; errors:
 
       // Match article to company by name occurrence in title or description
       const text = `${article.title} ${article.description ?? ''}`.toLowerCase()
-      const matched = companies.find((c) =>
+      let matched = companies.find((c) =>
         text.includes(c.name.toLowerCase())
       )
 
-      if (!matched) continue
+      if (!matched) {
+        const newCompany = await discoverAndCreateCompany(article.title, supabase)
+        if (!newCompany) continue
+        companies.push(newCompany)
+        matched = newCompany
+        discovered++
+      }
 
       const { error } = await supabase
         .from('news_articles')
@@ -97,5 +105,5 @@ export async function syncNewsFromNewsAPI(): Promise<{ inserted: number; errors:
     }
   }
 
-  return { inserted, errors }
+  return { inserted, discovered, errors }
 }
