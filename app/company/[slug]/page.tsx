@@ -1,12 +1,17 @@
 import { notFound } from 'next/navigation'
-import { Newspaper, TrendingUp } from 'lucide-react'
+import { MessageCircle, Newspaper, TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { CompanyHeader } from '@/components/company/CompanyHeader'
 import { BuzzChart } from '@/components/company/BuzzChart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatRelativeTime } from '@/lib/utils'
 import type { Metadata } from 'next'
-import type { BuzzScore } from '@/types/database'
+import type { BuzzScore, BlueskyPost } from '@/types/database'
+
+function bskyUriToUrl(uri: string): string {
+  const [did, , rkey] = uri.replace('at://', '').split('/')
+  return `https://bsky.app/profile/${did}/post/${rkey}`
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -43,7 +48,7 @@ export default async function CompanyPage({ params }: PageProps) {
   if (!company) notFound()
 
   // Now fetch related data using the company id
-  const [newsArticlesRes, socialSignalsRes, buzzScoreRes] = await Promise.all([
+  const [newsArticlesRes, socialSignalsRes, buzzScoreRes, blueskyPostsRes] = await Promise.all([
     supabase
       .from('news_articles')
       .select('*')
@@ -61,11 +66,18 @@ export default async function CompanyPage({ params }: PageProps) {
       .select('*')
       .eq('company_id', company.id)
       .single(),
+    supabase
+      .from('bluesky_posts')
+      .select('*')
+      .eq('company_id', company.id)
+      .order('posted_at', { ascending: false })
+      .limit(5),
   ])
 
   const newsArticles = newsArticlesRes.data ?? []
   const socialSignals = socialSignalsRes.data ?? []
   const buzzScore: BuzzScore | null = buzzScoreRes.data
+  const blueskyPosts: BlueskyPost[] = blueskyPostsRes.data ?? []
 
   return (
     <div className="container py-8 max-w-4xl">
@@ -102,6 +114,44 @@ export default async function CompanyPage({ params }: PageProps) {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Web Articles
               </span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Bluesky posts */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Recent Bluesky Posts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {blueskyPosts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No Bluesky posts yet</p>
+            ) : (
+              <div className="space-y-3">
+                {blueskyPosts.map((post) => (
+                  <div key={post.id} className="border-b last:border-0 pb-3 last:pb-0">
+                    <p className="text-sm">{post.post_text}</p>
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                      <span>{post.author_handle ?? 'Unknown'}</span>
+                      <span>·</span>
+                      <span>{formatRelativeTime(post.posted_at)}</span>
+                      <span>·</span>
+                      <span>♥ {post.like_count}</span>
+                      <a
+                        href={bskyUriToUrl(post.post_uri)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto text-primary hover:underline"
+                      >
+                        View
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

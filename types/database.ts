@@ -245,6 +245,56 @@ export type Database = {
           }
         ]
       }
+      bluesky_posts: {
+        Row: {
+          id: string
+          company_id: string
+          post_uri: string
+          post_text: string
+          author_handle: string | null
+          author_name: string | null
+          like_count: number
+          reply_count: number
+          repost_count: number
+          posted_at: string
+          indexed_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          post_uri: string
+          post_text: string
+          author_handle?: string | null
+          author_name?: string | null
+          like_count?: number
+          reply_count?: number
+          repost_count?: number
+          posted_at: string
+          indexed_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          post_uri?: string
+          post_text?: string
+          author_handle?: string | null
+          author_name?: string | null
+          like_count?: number
+          reply_count?: number
+          repost_count?: number
+          posted_at?: string
+          indexed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'bluesky_posts_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -268,6 +318,7 @@ export type SocialSignal = Database['public']['Tables']['social_signals']['Row']
 export type BuzzScore = Database['public']['Tables']['buzz_scores']['Row']
 export type UserPreferences = Database['public']['Tables']['user_preferences']['Row']
 export type WatchlistItem = Database['public']['Tables']['watchlist']['Row']
+export type BlueskyPost = Database['public']['Tables']['bluesky_posts']['Row']
 
 // Extended types with joins
 export interface CompanyWithBuzz extends Company {

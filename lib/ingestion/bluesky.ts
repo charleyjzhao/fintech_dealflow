@@ -17,6 +17,10 @@ const BSKY_API = 'https://bsky.social/xrpc'
 
 interface BskyPost {
   uri: string
+  author?: {
+    handle?: string
+    displayName?: string
+  }
   record: {
     text: string
     createdAt: string
@@ -60,7 +64,7 @@ async function getAuthToken(): Promise<string | null> {
 async function searchBlueSkyPosts(
   query: string,
   token: string
-): Promise<{ count: number; engagementScore: number }> {
+): Promise<{ count: number; engagementScore: number; posts: BskyPost[] }> {
   const url = new URL(`${BSKY_API}/app.bsky.feed.searchPosts`)
   url.searchParams.set('q', query)
   url.searchParams.set('limit', '25')
@@ -79,7 +83,7 @@ async function searchBlueSkyPosts(
   })
 
   if (!res.ok) {
-    if (res.status === 429) return { count: 0, engagementScore: 0 }
+    if (res.status === 429) return { count: 0, engagementScore: 0, posts: [] }
     throw new Error(`Bluesky search failed: ${res.status}`)
   }
 
@@ -97,6 +101,7 @@ async function searchBlueSkyPosts(
   return {
     count: posts.length,
     engagementScore: Math.round(engagementScore),
+    posts,
   }
 }
 
@@ -126,7 +131,7 @@ export async function syncBlueskyMentions(): Promise<{ processed: number; errors
 
   for (const company of companies) {
     try {
-      const { count, engagementScore } = await searchBlueSkyPosts(company.name, token)
+      const { count, engagementScore, posts } = await searchBlueSkyPosts(company.name, token)
 
       if (count > 0) {
         const { error } = await supabase.from('social_signals').insert({
@@ -138,6 +143,22 @@ export async function syncBlueskyMentions(): Promise<{ processed: number; errors
         })
 
         if (error) errors.push(`Bluesky signal insert error for ${company.name}: ${error.message}`)
+
+        for (const post of posts) {
+          const { error: postError } = await supabase.from('bluesky_posts').upsert({
+            company_id: company.id,
+            post_uri: post.uri,
+            post_text: post.record.text,
+            author_handle: post.author?.handle ?? null,
+            author_name: post.author?.displayName ?? null,
+            like_count: post.likeCount ?? 0,
+            reply_count: post.replyCount ?? 0,
+            repost_count: post.repostCount ?? 0,
+            posted_at: post.record.createdAt,
+          }, { onConflict: 'post_uri', ignoreDuplicates: false })
+
+          if (postError) errors.push(`Bluesky post upsert error for ${company.name}: ${postError.message}`)
+        }
       }
 
       processed++
