@@ -80,7 +80,7 @@ export default async function TrendingPage() {
           <h1 className="text-2xl font-bold">Trending Fintechs</h1>
         </div>
         <p className="text-muted-foreground text-sm">
-          Companies generating the most buzz across X, Reddit, Bluesky, and news — with or without a funding round.
+          Companies generating the most buzz across Bluesky and the web — with or without a funding round.
         </p>
       </div>
 

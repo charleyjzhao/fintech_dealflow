@@ -1,8 +1,8 @@
 /**
  * Buzz score computation
  *
- * score_24h = (x_mentions * 1.5) + (reddit_mentions * 1.2) + (bluesky_mentions * 1.0) + (news_articles * 2.0)
- *             + engagement bonus: (x_engagement * 0.1) + (reddit_engagement * 0.08) + (bluesky_engagement * 0.05)
+ * score_24h = (bluesky_mentions * 1.0) + (news_articles * 2.0)
+ *             + engagement bonus: (bluesky_engagement * 0.05)
  *
  * score_7d  = 7-day rolling sum with exponential decay (recent days weighted more)
  *             decay factor: 0.85 per day (day 1 = 1.0, day 2 = 0.85, ..., day 7 = 0.85^6 ≈ 0.38)
@@ -11,15 +11,15 @@
 import { createServiceClient } from '@/lib/supabase/server'
 
 const PLATFORM_WEIGHTS: Record<string, number> = {
-  x: 1.5,
-  reddit: 1.2,
+  // x: 1.5,
+  // reddit: 1.2,
   bluesky: 1.0,
   news: 2.0,
 }
 
 const ENGAGEMENT_WEIGHTS: Record<string, number> = {
-  x: 0.1,
-  reddit: 0.08,
+  // x: 0.1,
+  // reddit: 0.08,
   bluesky: 0.05,
   news: 0.0,
 }
@@ -40,6 +40,7 @@ export async function computeBuzzScores(): Promise<{ updated: number; errors: st
   let updated = 0
 
   const now = new Date()
+  const cutoff1h = new Date(now.getTime() - 60 * 60 * 1000)
   const cutoff24h = new Date(now.getTime() - 24 * 60 * 60 * 1000)
   const cutoff7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
@@ -143,6 +144,23 @@ export async function computeBuzzScores(): Promise<{ updated: number; errors: st
     } else {
       updated += batch.length
     }
+  }
+
+  // Write news social_signals snapshot for this hour (powers the BuzzChart)
+  const sampledAt = now.toISOString()
+  for (const company of companies) {
+    const articlesThisHour = (newsByCompany[company.id] ?? []).filter((d) => d >= cutoff1h).length
+    if (articlesThisHour === 0) continue
+
+    const { error } = await supabase.from('social_signals').insert({
+      company_id: company.id,
+      platform: 'news',
+      mention_count: articlesThisHour,
+      engagement_score: 0,
+      sampled_at: sampledAt,
+    })
+
+    if (error) errors.push(`News signal insert error for ${company.id}: ${error.message}`)
   }
 
   return { updated, errors }

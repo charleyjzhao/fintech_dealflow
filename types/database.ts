@@ -72,53 +72,6 @@ export type Database = {
         }
         Relationships: []
       }
-      funding_rounds: {
-        Row: {
-          id: string
-          company_id: string
-          round_type: string
-          amount_usd: number | null
-          announced_date: string
-          lead_investors: string[]
-          all_investors: string[]
-          source_url: string | null
-          source: 'crunchbase' | 'pitchbook' | 'manual'
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          round_type: string
-          amount_usd?: number | null
-          announced_date: string
-          lead_investors?: string[]
-          all_investors?: string[]
-          source_url?: string | null
-          source: 'crunchbase' | 'pitchbook' | 'manual'
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          round_type?: string
-          amount_usd?: number | null
-          announced_date?: string
-          lead_investors?: string[]
-          all_investors?: string[]
-          source_url?: string | null
-          source?: 'crunchbase' | 'pitchbook' | 'manual'
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'funding_rounds_company_id_fkey'
-            columns: ['company_id']
-            isOneToOne: false
-            referencedRelation: 'companies'
-            referencedColumns: ['id']
-          }
-        ]
-      }
       news_articles: {
         Row: {
           id: string
@@ -310,7 +263,6 @@ export type Database = {
 
 // Convenience type aliases
 export type Company = Database['public']['Tables']['companies']['Row']
-export type FundingRound = Database['public']['Tables']['funding_rounds']['Row']
 export type NewsArticle = Database['public']['Tables']['news_articles']['Row']
 export type SocialSignal = Database['public']['Tables']['social_signals']['Row']
 export type BuzzScore = Database['public']['Tables']['buzz_scores']['Row']
@@ -320,9 +272,4 @@ export type WatchlistItem = Database['public']['Tables']['watchlist']['Row']
 // Extended types with joins
 export interface CompanyWithBuzz extends Company {
   buzz_scores?: BuzzScore | null
-  funding_rounds?: FundingRound[]
-}
-
-export interface FundingRoundWithCompany extends FundingRound {
-  companies: CompanyWithBuzz
 }

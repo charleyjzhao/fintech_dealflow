@@ -17,9 +17,8 @@ interface BuzzChartProps {
 
 interface ChartDataPoint {
   date: string
-  x: number
-  reddit: number
   bluesky: number
+  news: number
   total: number
 }
 
@@ -29,7 +28,7 @@ function buildChartData(signals: SocialSignal[]): ChartDataPoint[] {
 
   for (const signal of signals) {
     const day = signal.sampled_at.split('T')[0]
-    if (!byDay[day]) byDay[day] = { x: 0, reddit: 0, bluesky: 0 }
+    if (!byDay[day]) byDay[day] = { bluesky: 0, news: 0 }
     byDay[day][signal.platform] = (byDay[day][signal.platform] ?? 0) + signal.mention_count
   }
 
@@ -37,10 +36,9 @@ function buildChartData(signals: SocialSignal[]): ChartDataPoint[] {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([day, platforms]) => ({
       date: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      x: platforms.x ?? 0,
-      reddit: platforms.reddit ?? 0,
       bluesky: platforms.bluesky ?? 0,
-      total: (platforms.x ?? 0) + (platforms.reddit ?? 0) + (platforms.bluesky ?? 0),
+      news: platforms.news ?? 0,
+      total: (platforms.bluesky ?? 0) + (platforms.news ?? 0),
     }))
 }
 
@@ -59,17 +57,13 @@ export function BuzzChart({ signals }: BuzzChartProps) {
     <ResponsiveContainer width="100%" height={200}>
       <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
         <defs>
-          <linearGradient id="colorX" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="colorReddit" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
-          </linearGradient>
           <linearGradient id="colorBsky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
             <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="colorNews" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -91,9 +85,8 @@ export function BuzzChart({ signals }: BuzzChartProps) {
             fontSize: '12px',
           }}
         />
-        <Area type="monotone" dataKey="x" name="X (Twitter)" stroke="#3b82f6" fill="url(#colorX)" strokeWidth={2} />
-        <Area type="monotone" dataKey="reddit" name="Reddit" stroke="#f97316" fill="url(#colorReddit)" strokeWidth={2} />
         <Area type="monotone" dataKey="bluesky" name="Bluesky" stroke="#8b5cf6" fill="url(#colorBsky)" strokeWidth={2} />
+        <Area type="monotone" dataKey="news" name="Web Articles" stroke="#10b981" fill="url(#colorNews)" strokeWidth={2} />
       </AreaChart>
     </ResponsiveContainer>
   )

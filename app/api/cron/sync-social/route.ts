@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { syncXMentions } from '@/lib/ingestion/x-api'
-import { syncRedditMentions } from '@/lib/ingestion/reddit'
+// import { syncXMentions } from '@/lib/ingestion/x-api'
+// import { syncRedditMentions } from '@/lib/ingestion/reddit'
 import { syncBlueskyMentions } from '@/lib/ingestion/bluesky'
 
 export const runtime = 'nodejs'
@@ -18,14 +18,12 @@ export async function POST(req: NextRequest) {
 
   try {
     // Run sequentially to avoid overwhelming rate limits
-    const xResult = await syncXMentions().catch((e) => ({ processed: 0, errors: [String(e)] }))
-    const redditResult = await syncRedditMentions().catch((e) => ({ processed: 0, errors: [String(e)] }))
+    // const xResult = await syncXMentions().catch((e) => ({ processed: 0, errors: [String(e)] }))
+    // const redditResult = await syncRedditMentions().catch((e) => ({ processed: 0, errors: [String(e)] }))
     const bskyResult = await syncBlueskyMentions().catch((e) => ({ processed: 0, errors: [String(e)] }))
 
     return NextResponse.json({
       success: true,
-      x: xResult,
-      reddit: redditResult,
       bluesky: bskyResult,
       timestamp: new Date().toISOString(),
     })

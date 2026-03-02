@@ -29,28 +29,10 @@ export function CompanyHeader({ company, buzzScore }: CompanyHeaderProps) {
           </AvatarFallback>
         </Avatar>
 
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold">{company.name}</h1>
-              {company.description && (
-                <p className="text-muted-foreground mt-1 text-sm leading-relaxed max-w-2xl">
-                  {company.description}
-                </p>
-              )}
-            </div>
+        <div className="flex-1 h-16 flex flex-col">
+          <h1 className="text-2xl font-bold">{company.name}</h1>
 
-            {buzzScore && buzzScore.score_7d > 0 && (
-              <div className="flex-shrink-0 text-center bg-primary/5 rounded-lg px-3 py-2">
-                <div className="text-2xl font-bold text-primary">
-                  #{buzzScore.score_rank}
-                </div>
-                <div className="text-xs text-muted-foreground">Buzz Rank</div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 mt-3">
+          <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1.5">
             {company.hq_city && company.hq_country && (
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5" />
@@ -89,24 +71,34 @@ export function CompanyHeader({ company, buzzScore }: CompanyHeaderProps) {
             {company.is_public && (
               <Badge variant="outline">Public</Badge>
             )}
+            {company.subsectors.map((s) => (
+              <Link key={s} href={`/?subsector=${s}`} className="contents">
+                <Badge variant="secondary" className="capitalize cursor-pointer hover:bg-secondary/70">
+                  {s.replace('-', ' ')}
+                </Badge>
+              </Link>
+            ))}
+            {company.business_model && (
+              <Badge variant="secondary" className="capitalize">{company.business_model}</Badge>
+            )}
           </div>
-
-          {company.subsectors.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {company.subsectors.map((s) => (
-                <Link key={s} href={`/?subsector=${s}`}>
-                  <Badge variant="secondary" className="capitalize cursor-pointer hover:bg-secondary/70">
-                    {s.replace('-', ' ')}
-                  </Badge>
-                </Link>
-              ))}
-              {company.business_model && (
-                <Badge variant="outline">{company.business_model}</Badge>
-              )}
-            </div>
-          )}
         </div>
+
+        {buzzScore && buzzScore.score_7d > 0 && (
+          <div className="flex-shrink-0 text-center bg-primary/5 rounded-lg px-3 py-2">
+            <div className="text-2xl font-bold text-primary">
+              #{buzzScore.score_rank}
+            </div>
+            <div className="text-xs text-muted-foreground">Buzz Rank</div>
+          </div>
+        )}
       </div>
+
+      {company.description && (
+        <p className="text-muted-foreground mt-3 text-sm leading-relaxed max-w-2xl pl-[84px]">
+          {company.description}
+        </p>
+      )}
     </div>
   )
 }
