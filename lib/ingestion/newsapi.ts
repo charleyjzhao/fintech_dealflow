@@ -46,11 +46,13 @@ export async function syncNewsFromNewsAPI(): Promise<{ inserted: number; discove
   const queries = ['fintech funding', 'fintech startup', 'payments startup', 'neobank']
 
   for (const query of queries) {
+    const from = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().split('T')[0]
     const url = new URL(`${NEWSAPI_BASE}/everything`)
     url.searchParams.set('q', query)
     url.searchParams.set('language', 'en')
     url.searchParams.set('sortBy', 'publishedAt')
     url.searchParams.set('pageSize', '20')
+    url.searchParams.set('from', from)
     url.searchParams.set('apiKey', apiKey)
 
     const res = await fetch(url.toString())

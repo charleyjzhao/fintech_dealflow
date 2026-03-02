@@ -106,6 +106,8 @@ export async function syncRSSFeeds(): Promise<{ inserted: number; discovered: nu
 
   if (!companies?.length) return { inserted, discovered, errors }
 
+  const cutoff = new Date(Date.now() - 7 * 24 * 3600 * 1000)
+
   for (const feed of RSS_FEEDS) {
     let xml: string
     try {
@@ -126,6 +128,8 @@ export async function syncRSSFeeds(): Promise<{ inserted: number; discovered: nu
     const items = parseRSSFeed(xml, feed.name)
 
     for (const item of items) {
+      if (new Date(item.pubDate) < cutoff) continue
+
       const text = `${item.title} ${item.description}`.toLowerCase()
       let matched = companies.find((c) => text.includes(c.name.toLowerCase()))
 
